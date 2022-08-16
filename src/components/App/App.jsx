@@ -1,38 +1,33 @@
-import { useState } from 'react';
-import useLocalStorage from 'hooks/useLocalStorage';
+import { useSelector, useDispatch } from 'react-redux/es/exports';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import ContactForm from 'components/ContactForm';
 import ContactList from 'components/ContactList';
 import Filter from 'components/Filter';
 import { ContainerBody, Title, TitleSecond } from './App.styled';
+import { getFilter, getContacts } from '../../redux/contactSelectors';
+import { createItem } from '../../redux/contactSlice';
+import { showWarning } from 'utils/toastMessage';
 
 const App = () => {
-  // Масив стандартних контактів)))
-  const [contacts, setContacts] = useLocalStorage('contacts', [
-    { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-    { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-    { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-    { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-  ]);
-  const [filterEl, setFilter] = useState('');
+  const contacts = useSelector(getContacts);
+  const filterInput = useSelector(getFilter);
+
+  const dispatch = useDispatch();
 
   // Добавляє новий об'єкт та оновлює попередній масив об'єктів
-  const formSubmitHandler = newContact => {
+  const addContact = newContact => {
     const contactsName = contacts.some(el => newContact.name === el.name);
 
     // Перевірка на однакові імена
     contactsName
-      ? alert(`${newContact.name} is already in contacts.`)
-      : setContacts([...contacts, newContact]);
-  };
-
-  // Інпут фільтра значення, те, що вводимо
-  const changeFilter = e => {
-    setFilter(e.target.value);
+      ? showWarning(`${newContact.name} is already in contacts.`)
+      : dispatch(createItem(newContact));
   };
 
   // Логіка фільтру
   const getVisibleContacts = () => {
-    const normalizedFilter = filterEl.toLowerCase();
+    const normalizedFilter = filterInput.toLowerCase();
 
     return contacts.filter(contact =>
       contact.name.toLowerCase().includes(normalizedFilter)
@@ -41,24 +36,14 @@ const App = () => {
 
   const filterContacts = getVisibleContacts();
 
-  // Логіка кнопки видалення
-  const handleDeleteItem = contactId => {
-    setContacts(state => state.filter(el => el.id !== contactId));
-  };
-
   return (
     <ContainerBody>
       <Title>Phonebook</Title>
-
-      <ContactForm onSubmit={formSubmitHandler} />
-
+      <ContactForm onSubmit={addContact} />
       <TitleSecond>Contacts</TitleSecond>
-
-      <Filter value={filterEl} onChange={changeFilter} />
-      <ContactList
-        propsContacts={filterContacts}
-        deleteBtn={handleDeleteItem}
-      />
+      <Filter />
+      <ContactList propsContacts={filterContacts} />
+      <ToastContainer />
     </ContainerBody>
   );
 };
